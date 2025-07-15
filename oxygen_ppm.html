@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oxygen PPM Calculator</title>
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --secondary: #3498db;
+      --accent: #e74c3c;
+      --light: #ecf0f1;
+      --dark: #34495e;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 25px 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+    .content {
+      padding: 25px;
+    }
+    .input-section {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark);
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      border-color: var(--secondary);
+      outline: none;
+    }
+    button {
+      background: var(--secondary);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .final-result {
+      background: var(--primary);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+    }
+    .final-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin: 10px 0;
+    }
+    .unit {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+    .error {
+      color: var(--accent);
+      font-weight: 600;
+      margin: 15px 0;
+      text-align: center;
+      padding: 10px;
+      background: #fdeded;
+      border-radius: 8px;
+      display: none;
+    }
+    footer {
+      text-align: center;
+      padding: 15px;
+      color: #7f8c8d;
+      font-size: 0.8rem;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Oxygen PPM Calculator in BOF (SMS-2)</h1>
+      <p class="subtitle">Calculate oxygen concentration in parts per million (PPM)</p>
+    </header>
+    <div class="content">
+      <div class="input-section">
+        <div class="input-group">
+          <label for="oxygenSupplied">Oxygen Supplied (Nm³):</label>
+          <input type="number" id="oxygenSupplied" placeholder="e.g. 400" min="0" step="1">
+        </div>
+        <div class="input-group">
+          <label for="steelWeight">Steel Weight (kg):</label>
+          <input type="number" id="steelWeight" placeholder="e.g. 120000" min="0" step="1000" value="120000">
+        </div>
+        <div class="input-group">
+          <label for="deltaC">Carbon %ΔC (e.g. 0.05 for 0.05%):</label>
+          <input type="number" id="deltaC" placeholder="e.g. 0.05" min="0" step="0.01">
+        </div>
+        <button onclick="calculatePPM()">Calculate Oxygen PPM</button>
+        <div id="error" class="error"></div>
+      </div>
+      <div class="final-result">
+        <div>Oxygen Concentration in Steel</div>
+        <div id="finalPPM" class="final-value">0.00</div>
+        <div class="unit">parts per million (ppm)</div>
+      </div>
+    </div>
+    <footer>
+      <p>Oxygen PPM Calculator for Steel Production</p>
+    </footer>
+  </div>
+  <script>
+  function calculatePPM() {
+  const oxygenSupplied = parseFloat(document.getElementById("oxygenSupplied").value);
+  const steelWeight = parseFloat(document.getElementById("steelWeight").value);
+  const deltaC = parseFloat(document.getElementById("deltaC").value);
+
+  const carbonThreshold = 0.02;
+  const stoichFactor = 2.0;
+  const ppmPer100Nm3 = 587;
+  const basePPMAtThreshold = 1650;
+
+  document.getElementById("error").style.display = "none";
+
+  if (isNaN(oxygenSupplied) || isNaN(steelWeight) || isNaN(deltaC)) {
+    showError("Please fill all inputs with valid numbers.");
+    return;
+  }
+
+  if (oxygenSupplied < 0 || steelWeight <= 0 || deltaC <= 0.02) {
+    showError("Carbon % must be > 0.02 and values must be positive.");
+    return;
+  }
+
+  const deltaCTotal = deltaC - carbonThreshold;
+  const o2Required = (steelWeight * deltaCTotal * stoichFactor) / 100;
+
+  let finalPPM = 0;
+  let carbonRemoved = (oxygenSupplied * 100) / (steelWeight * stoichFactor);
+  let remainingCarbon = deltaC - carbonRemoved - 0.02;
+
+  // Efficiency of oxygen transfer (eta): only a fraction of excess O2 contributes to ppm
+const eta = 0.50; // 50% efficiency — realistic for industrial converters
+
+if (oxygenSupplied >= o2Required) {
+  const excessO2 = oxygenSupplied - o2Required;
+  const effectiveO2 = excessO2 * eta;
+  finalPPM = basePPMAtThreshold + (effectiveO2 * ppmPer100Nm3 / 100);
+  remainingCarbon = 0.00;
+}
+ else {
+    finalPPM = 33 / (remainingCarbon + 0.02); // account for subtracted 0.02 earlier
+  }
+
+  document.getElementById("finalPPM").textContent = finalPPM.toFixed(2);
+  // Optional: display Remaining Carbon if needed
+  console.log("Remaining Carbon % =", remainingCarbon.toFixed(5));
+}
+
+</script>
+
+
+</body>
+</html>
