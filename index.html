@@ -197,14 +197,26 @@
   let remainingCarbon = deltaC - carbonRemoved - 0.02;
 
   // Efficiency of oxygen transfer (eta): only a fraction of excess O2 contributes to ppm
-const eta = 0.50; // 50% efficiency — realistic for industrial converters
-
 if (oxygenSupplied >= o2Required) {
   const excessO2 = oxygenSupplied - o2Required;
-  const effectiveO2 = excessO2 * eta;
+  let effectiveO2 = 0;
+
+  // Step-wise efficiency calculation
+  const step1 = Math.min(excessO2, 100) * 0.30;
+  const step2 = Math.min(Math.max(excessO2 - 100, 0), 100) * 0.20;
+  const step3 = Math.min(Math.max(excessO2 - 200, 0), 100) * 0.10;
+  const step4 = Math.min(Math.max(excessO2 - 300, 0), 100) * 0.05;
+  const step5 = Math.max(excessO2 - 400, 0) * 0.05; // beyond 400 Nm³ still 5%
+
+  effectiveO2 = step1 + step2 + step3 + step4 + step5;
+
   finalPPM = basePPMAtThreshold + (effectiveO2 * ppmPer100Nm3 / 100);
   remainingCarbon = 0.00;
-}
+
+  console.log(`Excess O2 = ${excessO2} Nm³`);
+  console.log(`Effective O2 = ${effectiveO2} Nm³`);
+  console.log(`Stepwise: 30%=${step1}, 20%=${step2}, 10%=${step3}, 5%=${step4}, >400Nm³=${step5}`);
+} 
  else {
     finalPPM = 33 / (remainingCarbon + 0.02); // account for subtracted 0.02 earlier
   }
